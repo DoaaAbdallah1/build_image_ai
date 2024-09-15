@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:lottie/lottie.dart';
 import 'package:http/http.dart' as http;
+import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:uuid/uuid.dart';
 
@@ -23,15 +24,17 @@ class _HomeState extends State<Home> {
   Uint8List? _imageUrl;
   bool isLoadingDownload = false;
   Uuid uuid = const Uuid();
-  final SpeechToText _speechToText = SpeechToText();
-  bool _speechEnable = false;
+  SpeechToText speechToText= SpeechToText();
+  bool isListening = false;
   String _textSpoken = '';
-  double _confidentLevel = 0;
+  bool speechEnabled = false;
 
   @override
   void initState() {
     super.initState();
-    initSpeech();
+    if (!speechEnabled) {
+      initSpeechToText();
+    }
   }
 
   @override
@@ -49,6 +52,8 @@ class _HomeState extends State<Home> {
             ? IconButton(
                 onPressed: () {
                   promptController.clear();
+                  _textSpoken = "";
+
                   setState(() {
                     _imageUrl = null;
                   });
@@ -122,12 +127,12 @@ class _HomeState extends State<Home> {
                     ),
                     IconButton(
                         onPressed: () {
-                          _speechToText.isListening
-                              ? stopListening()
-                              : startListening();
+                          speechToText.isNotListening
+                              ? startListening()
+                              : stopListening();
                         },
                         icon: Icon(
-                            _speechToText.isNotListening
+                            speechToText.isNotListening
                                 ? Icons.mic_off
                                 : Icons.mic,
                             color: Colors.white,
@@ -150,9 +155,11 @@ class _HomeState extends State<Home> {
                       fontSize: 18,
                       color: Colors.white,
                     ),
-                    decoration: const InputDecoration.collapsed(
-                      hintText: 'Write the prompt here...',
-                      hintStyle: TextStyle(
+                    decoration: InputDecoration.collapsed(
+                      hintText: speechToText.isNotListening
+                          ? 'Write the prompt here...'
+                          : "Listening...",
+                      hintStyle: const TextStyle(
                         fontSize: 18,
                         color: Color(0xFF9F9F9F),
                       ),
@@ -197,32 +204,6 @@ class _HomeState extends State<Home> {
         ],
       ),
     );
-  }
-
-
-  
-  Future<void> initSpeech() async {
-    _speechEnable = await _speechToText.initialize();
-  }
-
-  Future<void> startListening() async {
-    await _speechToText.listen(onResult: onSpeechResult);
-    setState(() {
-      _confidentLevel = 0;
-    });
-  }
-
-  Future<void> stopListening() async {
-    await _speechToText.stop();
-    setState(() {});
-  }
-
-  void onSpeechResult(result) {
-    setState(() {
-      _textSpoken = "${result.recognizedWords}";
-      promptController.text = _textSpoken;
-      _confidentLevel = result.confidence;
-    });
   }
 
   void generateImage() async {
@@ -315,4 +296,46 @@ class _HomeState extends State<Home> {
     }
   }
 
+  Future<void> initSpeechToText() async {
+  
+
+    speechEnabled = await speechToText.initialize();
+  }
+
+  Future<void> startListening() async {
+    setState(() {
+      isListening = true;
+    });
+    await speechToText.listen(
+      onResult: _onSpeechResult,
+      listenFor: const Duration(seconds: 30),
+      localeId: "en_En",
+      cancelOnError: false,
+      partialResults: false,
+      listenMode: ListenMode.confirmation,
+    );
+    setState(() {});
+    print("start");
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      _textSpoken = "${promptController.text}${result.recognizedWords} ";
+      if (result.recognizedWords == "") {
+        stopListening();
+      }
+      promptController.text = _textSpoken;
+    });
+    print(isListening);
+    print(speechToText.isListening);
+  }
+
+  Future<void> stopListening() async {
+    await speechToText.stop();
+
+    isListening = false;
+
+    setState(() {});
+    print("stop");
+  }
 }
