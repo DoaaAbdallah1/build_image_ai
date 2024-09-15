@@ -34,120 +34,6 @@ class _HomeState extends State<Home> {
     initSpeech();
   }
 
-  Future<void> initSpeech() async {
-    _speechEnable = await _speechToText.initialize();
-  }
-
-  Future<void> startListening() async {
-    await _speechToText.listen(onResult: onSpeechResult);
-    setState(() {
-      _confidentLevel = 0;
-    });
-  }
-
-  Future<void> stopListening() async {
-    await _speechToText.stop();
-    setState(() {});
-  }
-
-  void onSpeechResult(result) {
-    setState(() {
-      _textSpoken = "${result.recognizedWords}";
-      promptController.text = _textSpoken;
-      _confidentLevel = result.confidence;
-    });
-  }
-
-  void generateImage() async {
-    if (promptController.text.isNotEmpty) {
-      setState(() {
-        isLoading = true;
-        _imageUrl = null;
-      });
-      String engineId = "stable-diffusion-v1-6";
-      String apiHost = 'https://api.stability.ai';
-      String apiKey = 'sk-qA5E26m41clhcPOdBDj1q805D7URPUO9rwPvIMcLaJc6nsIV';
-      debugPrint(promptController.text);
-      final response = await http.post(
-          Uri.parse('$apiHost/v1/generation/$engineId/text-to-image'),
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "image/png",
-            "Authorization": "Bearer $apiKey"
-          },
-          body: jsonEncode({
-            "text_prompts": [
-              {
-                "text": promptController.text,
-                "weight": 1,
-              }
-            ],
-            "cfg_scale": 7,
-            "height": 1024,
-            "width": 1024,
-            "samples": 1,
-            "steps": 30,
-          }));
-
-      if (response.statusCode == 200) {
-        try {
-          Uint8List imageData;
-          debugPrint(response.statusCode.toString());
-          imageData = response.bodyBytes;
-          setState(() {
-            _imageUrl = imageData;
-            isLoading = false;
-          });
-        } on Exception {
-          setState(() {
-            isLoading = false;
-          });
-          debugPrint("failed to generate image");
-        }
-      } else {
-        setState(() {
-          isLoading = false;
-        });
-        debugPrint("failed to generate image");
-      }
-    }
-  }
-
-  Future<void> saveImage() async {
-    if (_imageUrl != null) {
-      setState(() {
-        isLoadingDownload = true;
-      });
-      final result = await ImageGallerySaverPlus.saveImage(_imageUrl!,
-          quality: 100, name: uuid.v4());
-      if (kDebugMode) {
-        print(result);
-      }
-      setState(() {
-        isLoadingDownload = false;
-        if (result["isSuccess"]) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-              'Image saved successfully ✅',
-              style: TextStyle(color: Color(0xFFA200FF)),
-            ),
-            behavior: SnackBarBehavior.fixed,
-            backgroundColor: Color(0xFF1E1E1E),
-          ));
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text(
-              'Image not saved successfully ',
-              style: TextStyle(color: Color(0xFFA200FF)),
-            ),
-            behavior: SnackBarBehavior.fixed,
-            backgroundColor: Color(0xFF1E1E1E),
-          ));
-        }
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -312,4 +198,121 @@ class _HomeState extends State<Home> {
       ),
     );
   }
+
+
+  
+  Future<void> initSpeech() async {
+    _speechEnable = await _speechToText.initialize();
+  }
+
+  Future<void> startListening() async {
+    await _speechToText.listen(onResult: onSpeechResult);
+    setState(() {
+      _confidentLevel = 0;
+    });
+  }
+
+  Future<void> stopListening() async {
+    await _speechToText.stop();
+    setState(() {});
+  }
+
+  void onSpeechResult(result) {
+    setState(() {
+      _textSpoken = "${result.recognizedWords}";
+      promptController.text = _textSpoken;
+      _confidentLevel = result.confidence;
+    });
+  }
+
+  void generateImage() async {
+    if (promptController.text.isNotEmpty) {
+      setState(() {
+        isLoading = true;
+        _imageUrl = null;
+      });
+      String engineId = "stable-diffusion-v1-6";
+      String apiHost = 'https://api.stability.ai';
+      String apiKey = 'sk-qA5E26m41clhcPOdBDj1q805D7URPUO9rwPvIMcLaJc6nsIV';
+      debugPrint(promptController.text);
+      final response = await http.post(
+          Uri.parse('$apiHost/v1/generation/$engineId/text-to-image'),
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "image/png",
+            "Authorization": "Bearer $apiKey"
+          },
+          body: jsonEncode({
+            "text_prompts": [
+              {
+                "text": promptController.text,
+                "weight": 1,
+              }
+            ],
+            "cfg_scale": 7,
+            "height": 1024,
+            "width": 1024,
+            "samples": 1,
+            "steps": 30,
+          }));
+
+      if (response.statusCode == 200) {
+        try {
+          Uint8List imageData;
+          debugPrint(response.statusCode.toString());
+          imageData = response.bodyBytes;
+          setState(() {
+            _imageUrl = imageData;
+            isLoading = false;
+          });
+        } on Exception {
+          setState(() {
+            isLoading = false;
+          });
+          debugPrint("failed to generate image");
+        }
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+        debugPrint("failed to generate image");
+      }
+    }
+  }
+
+  Future<void> saveImage() async {
+    if (_imageUrl != null) {
+      setState(() {
+        isLoadingDownload = true;
+      });
+      final result = await ImageGallerySaverPlus.saveImage(_imageUrl!,
+          quality: 100, name: uuid.v4());
+      if (kDebugMode) {
+        print(result);
+      }
+      setState(() {
+        isLoadingDownload = false;
+        if (result["isSuccess"]) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+              'Image saved successfully ✅',
+              style: TextStyle(color: Color(0xFFA200FF)),
+            ),
+            behavior: SnackBarBehavior.fixed,
+            backgroundColor: Color(0xFF1E1E1E),
+          ));
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+              'Image not saved successfully ',
+              style: TextStyle(color: Color(0xFFA200FF)),
+            ),
+            behavior: SnackBarBehavior.fixed,
+            backgroundColor: Color(0xFF1E1E1E),
+          ));
+        }
+      });
+    }
+  }
+
 }
