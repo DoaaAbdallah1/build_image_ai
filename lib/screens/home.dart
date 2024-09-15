@@ -214,7 +214,7 @@ class _HomeState extends State<Home> {
       });
       String engineId = "stable-diffusion-v1-6";
       String apiHost = 'https://api.stability.ai';
-      String apiKey = 'sk-qA5E26m41clhcPOdBDj1q805D7URPUO9rwPvIMcLaJc6nsIV';
+      String apiKey = 'api_key';
       debugPrint(promptController.text);
       final response = await http.post(
           Uri.parse('$apiHost/v1/generation/$engineId/text-to-image'),
